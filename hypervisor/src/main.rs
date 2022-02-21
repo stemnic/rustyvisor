@@ -1,6 +1,7 @@
+#![no_std]
 #![no_main]
-#![cfg_attr(not(test), no_std)]
-#![feature(panic_info_message, global_asm, llvm_asm, asm)]
+
+#![feature(panic_info_message, type_ascription, asm_const)]
 
 // extenal crates
 extern crate elf_rs;

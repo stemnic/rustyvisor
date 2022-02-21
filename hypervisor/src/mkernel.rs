@@ -5,6 +5,7 @@ use crate::memlayout;
 use crate::riscv;
 use crate::uart;
 use crate::util;
+use core::arch::global_asm;
 use core::fmt::Error;
 extern "C" {
     #[link_name = "trap_to_mkernel"]

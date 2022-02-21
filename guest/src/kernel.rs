@@ -2,6 +2,7 @@ global_asm!(include_str!("kernel.S"));
 
 use crate::memlayout;
 use crate::uart;
+use core::arch::global_asm;
 use core::fmt::Error;
 
 extern "C" {

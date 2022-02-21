@@ -3,7 +3,7 @@
 
 extern crate num_enum;
 
-use core::convert::TryFrom;
+use core::{convert::TryFrom, arch::asm};
 use core::marker::Copy;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 

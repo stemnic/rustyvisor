@@ -1,3 +1,5 @@
+use core::arch::{asm, global_asm};
+
 global_asm!(include_str!("instruction.S"));
 
 pub fn mret() -> ! {

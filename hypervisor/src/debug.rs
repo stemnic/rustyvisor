@@ -1,3 +1,5 @@
+use core::arch::asm;
+
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
     print!("abort: ");
@@ -18,7 +20,7 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
 extern "C" fn abort() -> ! {
     loop {
         unsafe {
-            llvm_asm!("wfi"::::"volatile");
+            asm!("wfi", options(nostack));
         }
     }
 }
