@@ -7,6 +7,7 @@ use crate::plic;
 use crate::riscv;
 use crate::uart;
 use crate::virtio;
+use core::arch::asm;
 use core::arch::global_asm;
 use core::fmt::Error;
 

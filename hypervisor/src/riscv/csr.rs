@@ -20,6 +20,7 @@ pub mod mie;
 pub mod misa;
 pub mod mstatus;
 pub mod mtvec;
+pub mod mcause;
 
 pub mod satp;
 pub mod sepc;

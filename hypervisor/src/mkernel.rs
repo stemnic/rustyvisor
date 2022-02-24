@@ -5,6 +5,7 @@ use crate::memlayout;
 use crate::riscv;
 use crate::uart;
 use crate::util;
+use core::arch::asm;
 use core::arch::global_asm;
 use core::fmt::Error;
 extern "C" {
@@ -45,6 +46,14 @@ pub fn init() -> Result<(), Error> {
     riscv::csr::mideleg::write(
         riscv::csr::mideleg::SEIP | riscv::csr::mideleg::STIP | riscv::csr::mideleg::SSIP,
     );
+    
+    // enable hypervisor extension
+    let misa_state = riscv::csr::misa::read();
+    riscv::csr::misa::write(misa_state | riscv::csr::misa::HV);
+    assert_eq!(
+        (riscv::csr::misa::read()) & riscv::csr::misa::HV,
+        riscv::csr::misa::HV
+    );
 
     // mtvec: set M-mode trap handler
     riscv::csr::mtvec::set(&(trap as unsafe extern "C" fn()));
@@ -60,15 +69,31 @@ pub fn init() -> Result<(), Error> {
     Ok(())
 }
 
-pub fn switch_to_hypervisor<T: util::jump::Target>(target: T) -> ! {
+pub fn switch_to_hypervisor<T: util::jump::Target + Copy>(target: T) -> ! {
     riscv::csr::mstatus::set_mpp(riscv::csr::CpuMode::S);
     riscv::csr::mstatus::set_mpv(riscv::csr::VirtualzationMode::Host);
-
     riscv::csr::mepc::set(target);
+    assert_eq!(
+        riscv::csr::mepc::read(),
+        target.convert_to_fn_address()
+    );
+
+    unsafe{
+        asm!("	
+        # Set up the PMP registers correctly
+        li t4, 31
+        csrw pmpcfg0, t4
+        li t5, (1 << 55) - 1
+        csrw pmpaddr0, t5
+        ");
+    }
+
+    log::info!("Current mepc addr {:#x}", riscv::csr::mepc::read());
     riscv::instruction::mret();
 }
 
 #[no_mangle]
 pub extern "C" fn rust_mtrap_handler() {
     log::info!("trapped to M-mode!");
+    log::info!("Machine trap cause {:#x}", riscv::csr::mcause::read());
 }

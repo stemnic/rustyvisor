@@ -1,0 +1,9 @@
+target remote :1234
+define stepdis
+    stepi
+    disassemble
+end
+#break mkernel::switch_to_hypervisor
+#break mkernel.rs:92
+#break trap_to_mkernel
+#break trap_to_hypervisor
