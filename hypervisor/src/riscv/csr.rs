@@ -21,6 +21,7 @@ pub mod misa;
 pub mod mstatus;
 pub mod mtvec;
 pub mod mcause;
+pub mod mhartid;
 
 pub mod satp;
 pub mod sepc;

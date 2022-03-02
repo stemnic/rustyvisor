@@ -29,6 +29,7 @@ pub extern "C" fn rust_m_entrypoint() -> ! {
         panic!("Failed to init logger. {:?}", e);
     }
     log::info!("logger was initialized");
+    log::info!("processor is in m-mode running with hartid: {}", riscv::csr::mhartid::read());
 
     // jump to a next handler while changing CPU mode to HS
     log::info!("jump to hypervisor while chainging CPU mode from M to HS");

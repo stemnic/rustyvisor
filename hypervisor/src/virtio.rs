@@ -193,7 +193,7 @@ impl Queue {
 }
 
 pub fn init() {
-	// log::info!("virtio0 addr: 0x{:016x}", memlayout::VIRTIO0_BASE);
+	log::info!("virtio0 addr: 0x{:016x}", memlayout::VIRTIO0_BASE);
 	let base = memlayout::VIRTIO0_BASE as *mut u32;
 	assert_device_status(&base);
 	assert_device_type(&base, 2);

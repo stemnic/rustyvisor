@@ -3,7 +3,18 @@ define stepdis
     stepi
     disassemble
 end
+#add-symbol-file /Users/stemnic/gits/xv6-riscv/kernel/kernel
+#break _entry
+add-symbol-file /Users/stemnic/gits/osblog/risc_v/target/riscv64gc-unknown-none-elf/debug/sos
+#symbol-file /Users/stemnic/gits/osblog/risc_v/target/riscv64gc-unknown-none-elf/debug/sos
+#break _start
+break sos::kinit:7
+#break sos::virtio::probe
+#break src/virtio.rs:245
 #break mkernel::switch_to_hypervisor
 #break mkernel.rs:92
 #break trap_to_mkernel
 #break trap_to_hypervisor
+#break *0x80000000
+
+#break hypervisor.rs:192

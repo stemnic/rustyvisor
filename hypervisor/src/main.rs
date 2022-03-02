@@ -16,6 +16,7 @@ pub mod boot;
 pub mod memlayout;
 pub mod paging;
 pub mod plic;
+pub mod clint;
 
 pub mod mkernel;
 

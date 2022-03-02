@@ -48,7 +48,12 @@ pub fn init() -> Result<(), Error> {
     virtio::init();
 
     // hedeleg: delegate some synchoronous exceptions
-    riscv::csr::hedeleg::write((1 << 0) | (1 << 3) | (1 << 8) | (1 << 12) | (1 << 13) | (1 << 15));
+    riscv::csr::hedeleg::write(riscv::csr::hedeleg::INST_ADDR_MISALIGN 
+                            | riscv::csr::hedeleg::BREAKPOINT 
+                            | riscv::csr::hedeleg::ENV_CALL_FROM_U_MODE_OR_VU_MODE 
+                            | riscv::csr::hedeleg::INST_PAGE_FAULT 
+                            | riscv::csr::hedeleg::LOAD_PAGE_FAULT 
+                            | riscv::csr::hedeleg::STORE_AMO_PAGE_FAULT);
 
     // hideleg: delegate all interrupts
     riscv::csr::hideleg::write(
@@ -123,6 +128,20 @@ pub struct TrapFrame {
     pub pc: usize,          // 512
 }
 
+fn show_trapinfo(
+    sepc: usize,           // a0
+    stval: usize,          // a1
+    scause: usize,         // a2
+    sstatus: usize,        // a3
+    frame: *mut TrapFrame, // a4
+){
+    log::info!("<--------- trap --------->");
+    log::info!("sepc: 0x{:016x}", sepc,);
+    log::info!("stval: 0x{:016x}", stval,);
+    log::info!("scause: 0x{:016x}", scause,);
+    log::info!("sstatus: 0x{:016x}", sstatus,);
+}
+
 #[no_mangle]
 pub extern "C" fn rust_strap_handler(
     sepc: usize,           // a0
@@ -180,15 +199,18 @@ pub extern "C" fn rust_strap_handler(
             }
             21 => {
                 log::info!("exception: load guest page fault at 0x{:016x}", sepc);
+                show_trapinfo(sepc,stval,scause,sstatus,frame);
                 // TODO (enhancement): demand paging
                 loop {}
             }
             23 => {
                 log::info!("exception: store/amo guest-page fault at 0x{:016x}", sepc);
+                show_trapinfo(sepc,stval,scause,sstatus,frame);
                 // TODO: better handling
                 loop {}
             }
             _ => {
+                show_trapinfo(sepc,stval,scause,sstatus,frame);
                 unimplemented!();
             }
         }
