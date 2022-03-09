@@ -1,7 +1,9 @@
 global_asm!(include_str!("mkernel.S"));
 
+use crate::HEAP_ALLOCATOR;
 use crate::hypervisor;
 use crate::memlayout;
+use crate::memlayout::{heap_start, heap_end, HEAP_SIZE};
 use crate::riscv;
 use crate::uart;
 use crate::util;
@@ -30,7 +32,10 @@ pub extern "C" fn rust_m_entrypoint() -> ! {
     }
     log::info!("logger was initialized");
     log::info!("processor is in m-mode running with hartid: {}", riscv::csr::mhartid::read());
-
+    unsafe {
+        log::info!("Initing heap implementation: 0x{:016x} -> 0x{:016x} size: 0x{:016x}", heap_start(), heap_end(), HEAP_SIZE);
+        HEAP_ALLOCATOR.lock().add_to_heap(heap_start(), heap_end());
+    }
     // jump to a next handler while changing CPU mode to HS
     log::info!("jump to hypervisor while chainging CPU mode from M to HS");
     switch_to_hypervisor(hypervisor::entrypoint as unsafe extern "C" fn());

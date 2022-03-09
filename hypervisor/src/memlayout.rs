@@ -5,6 +5,8 @@ pub const PAGE_SIZE: u16 = 4096;
 pub const VIRTIO0_IRQ: u16 = 1;
 pub const UART0_IRQ: u16 = 10;
 
+pub const HEAP_SIZE: usize = 64 * 1024; // 64KiB
+
 // information on hypervisor binary
 /////
 extern "C" {
@@ -18,6 +20,14 @@ pub unsafe fn elf_start() -> usize {
 
 pub unsafe fn elf_end() -> usize {
     unsafe { &_elf_end as *const usize as usize }
+}
+
+pub unsafe fn heap_start() -> usize {
+    (elf_end() & !(0xfff as usize)) + 4096
+}
+
+pub unsafe fn heap_end() -> usize {
+    heap_start() + HEAP_SIZE
 }
 
 // information on hardware for hypervisor

@@ -2,7 +2,7 @@
 // if we run more rich guest OS or add more rich features to hypervisor,
 // we need to refine this implmentation :-D
 
-use crate::memlayout::{elf_start ,elf_end, DRAM_START, DRAM_END, PAGE_SIZE};
+use crate::memlayout::{DRAM_END, PAGE_SIZE, heap_end};
 
 // VirtualAddress
 /////
@@ -19,14 +19,14 @@ impl VirtualAddress {
 
     pub fn to_vpn(&self) -> [usize; 3] {
         [
-            (self.addr >> 12) & 0x1ff,
-            (self.addr >> 21) & 0x1ff,
-            (self.addr >> 30) & 0x1ff,
+            (self.addr >> 12) & 0x1ff, //L0 9bit
+            (self.addr >> 21) & 0x1ff, //L1 9bit
+            (self.addr >> 30) & 0x3ff, //L2 11bit
         ]
     }
 
     pub fn to_offset(&self) -> usize {
-        self.addr & 0x3ff
+        self.addr & 0x3ff //Offsett 12bit
     }
 
     pub fn to_usize(&self) -> usize {
@@ -52,14 +52,14 @@ impl PhysicalAddress {
     }
 
     pub fn to_ppn(&self) -> usize {
-        self.addr >> 12
+        self.addr >> 12 //ppn 44bit
     }
 
     pub fn to_ppn_array(&self) -> [usize; 3] {
         [
-            (self.addr >> 12) & 0x1ff,
-            (self.addr >> 21) & 0x1ff,
-            (self.addr >> 30) & 0x3ff_ffff,
+            (self.addr >> 12) & 0x1ff,      //L0 9bit
+            (self.addr >> 21) & 0x1ff,      //L1 9bit
+            (self.addr >> 30) & 0x3ff_ffff, //L2 26bit
         ]
     }
 
@@ -75,7 +75,7 @@ impl PhysicalAddress {
 // Page
 /////
 
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct Page {
     addr: PhysicalAddress,
 }
@@ -88,11 +88,11 @@ impl Page {
     pub fn address(&self) -> PhysicalAddress {
         self.addr
     }
-
+    /// Clears allocated memory for page
     pub fn clear(&self) {
         unsafe {
             let ptr = self.addr.as_pointer();
-            for i in 0..512 {
+            for i in 0..512 { 
                 ptr.add(i).write(0)
             }
         }
@@ -108,7 +108,7 @@ static mut initialized: bool = false;
 
 pub fn init() {
     unsafe {
-        base_addr = (elf_end() & !(0xfff as usize)) + 4096;
+        base_addr = (heap_end() & !(0xfff as usize)) + 4096; // Mock heap that is page aligned
         last_index = 0;
         initialized = true;
     }
@@ -120,6 +120,7 @@ pub fn set_alloc_base(addr: usize) {
     }
 }
 
+/// Allocated a page in the mock heap at the end of the elf
 pub fn alloc() -> Page {
     // TODO: this unsafe block is evil!
     unsafe {
@@ -138,6 +139,7 @@ pub fn alloc() -> Page {
     }
 }
 
+/// Makes sure the root page follows a 16KiB boundry
 pub fn alloc_16() -> Page {
     let mut root_page = alloc();
     while root_page.address().to_usize() & (0b11_1111_1111_1111 as usize) > 0 {
@@ -189,10 +191,12 @@ pub enum PageTableEntryFlag {
 
 impl PageTableEntry {
     pub fn from_value(v: usize) -> PageTableEntry {
-        let ppn = [(v >> 10) & 0x1ff, (v >> 19) & 0x1ff, (v >> 28) & 0x3ff_ffff];
+        let ppn = [   (v >> 10) & 0x1ff,       // PPN[0] 9 bit
+                                (v >> 19) & 0x1ff,       // PPN[1] 9 bit
+                                (v >> 28) & 0x3ff_ffff]; // PPN[2] 26 bit
         PageTableEntry {
             ppn: ppn,
-            flags: (v & (0x1ff as usize)) as u16,
+            flags: (v & (0x1ff as usize)) as u16, // flags 8 bit (seems like this is 9?)
         }
     }
 
@@ -226,6 +230,14 @@ impl PageTableEntry {
     pub fn is_valid(&self) -> bool {
         self.flags & (PageTableEntryFlag::Valid as u16) != 0
     }
+    // A leaf has one or more RWX bits set
+	pub fn is_leaf(&self) -> bool {
+		self.flags & 0xe != 0
+	}
+
+	pub fn is_branch(&self) -> bool {
+		!self.is_leaf()
+	}
 }
 
 pub struct PageTable {
@@ -320,6 +332,16 @@ impl PageTable {
                 let new_pt = PageTable::from_page(next_page);
                 self.map_intl(vaddr, dest, &new_pt, perm, level - 1);
             };
+        }
+    }
+    pub fn print_page_allocations(&self){
+        // Walking all the entries in the pagetable
+        let pt = PageTable::from_page(self.page);
+        for i in 0..512{
+            let entry = pt.get_entry(i);
+            if entry.is_valid(){
+                
+            }
         }
     }
 }

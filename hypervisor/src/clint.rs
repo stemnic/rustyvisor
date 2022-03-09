@@ -1,99 +1,81 @@
-use crate::memlayout;
-use core::ptr;
+#![allow(dead_code)]
 
-// Based on fu540 CLINT
+// Based on https://github.com/rustsbi/rustsbi-qemu/blob/main/rustsbi-qemu/src/clint.rs
 
-pub struct clint {
-    msip : msip,
-    mtimecmp: mtimecmp,
-    mtime : mtime
-}
-#[repr(C, packed)]
-struct mtime {
-    mtime : u8
-}
-#[repr(C, packed)]
-struct msip {
-    h0_h1 : u8,
-    h2_h3 : u8,
-    h4    : u8,
-}
-#[repr(C, packed)]
-struct mtimecmp {
-    h0 : u8,
-    h1 : u8,
-    h2 : u8,
-    h3 : u8,
-    h4 : u8,
+use rustsbi::{HartMask, Ipi, Timer};
+use rustsbi::SbiRet;
+
+use crate::riscv;
+
+pub struct Clint {
+    base: usize,
 }
 
-impl mtime {
-    pub fn get_time(&self) -> u8 {
-        self.mtime
-    }
-}
-
-impl msip {
-    pub fn h0_set(&mut self, value : usize) {
-        self.h0_h1 = (self.h0_h1) | (value as u8 & 0xf)
-    }
-    pub fn h0_read(self) -> usize {
-        (self.h0_h1 & 0xf) as usize
-    }
-    pub fn h1_set(&mut self, value : usize) {
-        self.h0_h1 = (self.h0_h1) | (value as u8 & 0xf0)
-    }
-    pub fn h1_read(self) -> usize {
-        ((self.h0_h1 & 0xf0) >> 4) as usize
-    }
-    pub fn h2_set(&mut self, value : usize) {
-        self.h2_h3 = (self.h2_h3) | (value as u8 & 0xf)
-    }
-    pub fn h2_read(self) -> usize {
-        (self.h2_h3 & 0xf) as usize
-    }
-    pub fn h3_set(&mut self, value : usize) {
-        self.h2_h3 = (self.h2_h3) | (value as u8 & 0xf0)
-    }
-    pub fn h3_read(self) -> usize {
-        ((self.h2_h3 & 0xf0) >> 4) as usize
-    }
-    pub fn h4_set(&mut self, value : usize) {
-        self.h4 = (self.h2_h3) | (value as u8 & 0xf)
-    }
-    pub fn h4_read(self) -> usize {
-        ((self.h4 & 0xf)) as usize
-    }
-}
-
-
-impl clint {
-    pub fn new() -> clint{
-         clint{
-            msip : msip{
-                h0_h1 : 0xda,
-                h2_h3 : 0xad,
-                h4    : 0xbe,
-            },
-            mtimecmp : mtimecmp{
-                h0 : 0xde,
-                h1 : 0xad,
-                h2 : 0xbe,
-                h3 : 0xef,
-                h4 : 0xf0,
-            },
-            mtime : mtime{
-                mtime : 0xaa 
-            }
+impl Clint {
+    #[inline]
+    pub fn new(base: *mut u8) -> Clint {
+        Clint {
+            base: base as usize,
         }
     }
-    pub fn msip_addr(&self) -> usize {
-        ptr::addr_of!(self.msip) as usize
+
+    #[inline]
+    pub fn get_mtime(&self) -> u64 {
+        unsafe {
+            let base = self.base as *mut u8;
+            core::ptr::read_volatile(base.add(0xbff8) as *mut u64)
+        }
     }
-    pub fn mtimecmp_addr(&self) -> usize {
-        ptr::addr_of!(self.mtimecmp) as usize
+
+    #[inline]
+    pub fn set_timer(&self, hart_id: usize, instant: u64) {
+        unsafe {
+            let base = self.base as *mut u8;
+            core::ptr::write_volatile((base.offset(0x4000) as *mut u64).add(hart_id), instant);
+        }
     }
-    pub fn mtime_addr(&self) -> usize {
-        ptr::addr_of!(self.mtime) as usize
+
+    #[inline]
+    pub fn send_soft(&self, hart_id: usize) {
+        unsafe {
+            let base = self.base as *mut u8;
+            core::ptr::write_volatile((base as *mut u32).add(hart_id), 1);
+        }
+    }
+
+    #[inline]
+    pub fn clear_soft(&self, hart_id: usize) {
+        unsafe {
+            let base = self.base as *mut u8;
+            core::ptr::write_volatile((base as *mut u32).add(hart_id), 0);
+        }
     }
 }
+
+/* 
+
+impl Ipi for Clint {
+    #[inline]
+    fn send_ipi_many(&self, hart_mask: HartMask) -> SbiRet {
+        // println!("[rustsbi] send ipi many, {:?}", hart_mask);
+        let num_harts = *crate::count_harts::NUM_HARTS.lock();
+        for i in 0..num_harts {
+            if hart_mask.has_bit(i) {
+                self.send_soft(i);
+            }
+        }
+        SbiRet::ok(0)
+    }
+}
+
+*/
+
+impl Timer for Clint {
+    #[inline]
+    fn set_timer(&self, time_value: u64) {
+        //let this_mhartid = riscv::register::mhartid::read();
+        let this_mhartid = riscv::csr::mhartid::read();
+        self.set_timer(this_mhartid, time_value);
+    }
+}
+

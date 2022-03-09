@@ -2,7 +2,7 @@ use crate::memlayout;
 use crate::paging;
 use crate::riscv;
 use crate::virtio;
-use crate::clint;
+//use crate::clint;
 use core::fmt::Error;
 use core::usize;
 use elf_rs::Elf;
@@ -11,18 +11,13 @@ pub struct Guest {
     pub name: &'static str,
     pub hgatp: riscv::csr::hgatp::Setting,
     pub sepc: usize,
-    pub clint: clint::clint,
     // TODO: other CSRs & registers
 }
 
 impl Guest {
     pub fn new(name: &'static str) -> Guest {
         // hgatp
-        let guest_clint = clint::clint::new();
-        let msip_addr = guest_clint.msip_addr();
-        let mtimecmp_addr = guest_clint.mtimecmp_addr();
-        let mtime_addr = guest_clint.mtime_addr();
-        let root_pt = prepare_gpat_pt(msip_addr,mtimecmp_addr,mtime_addr).unwrap();
+        let root_pt = prepare_gpat_pt().unwrap();
         let hgatp = riscv::csr::hgatp::Setting::new(
             riscv::csr::hgatp::Mode::Sv39x4,
             0,
@@ -33,7 +28,6 @@ impl Guest {
             name: name,
             hgatp: hgatp,
             sepc: memlayout::GUEST_DRAM_START,
-            clint: guest_clint,
         }
     }
 
@@ -129,7 +123,7 @@ impl Guest {
 }
 
 // This function return newly allocated page table for Guest Physical Address Translation.
-fn prepare_gpat_pt(msip_addr: usize, mtimecmp_addr: usize, mtime_addr : usize) -> Result<paging::PageTable, Error> {
+fn prepare_gpat_pt() -> Result<paging::PageTable, Error> {
     // NOTE (from the RISC-V specification):
     // As explained in Section 5.5.1, for the paged virtual-memory schemes (Sv32x4, Sv39x4, and Sv48x4),
     // the root page table is 16 KiB and must be aligned to a 16-KiB boundary. In these modes, the lowest
@@ -151,38 +145,6 @@ fn prepare_gpat_pt(msip_addr: usize, mtimecmp_addr: usize, mtime_addr : usize) -
     let page = paging::Page::from_address(paging::PhysicalAddress::new(vaddr));
     root_pt.map(
         paging::VirtualAddress::new(vaddr),
-        &page,
-        (paging::PageTableEntryFlag::Read as u16)
-            | (paging::PageTableEntryFlag::Write as u16)
-            | (paging::PageTableEntryFlag::Execute as u16)
-            | (paging::PageTableEntryFlag::User as u16), // required!
-    );
-
-    // create an identity map for guest clint
-    let addr = msip_addr;
-    let page = paging::Page::from_address(paging::PhysicalAddress::new(addr));
-    root_pt.map(
-        paging::VirtualAddress::new(memlayout::CLINT_HART0_MSIP),
-        &page,
-        (paging::PageTableEntryFlag::Read as u16)
-            | (paging::PageTableEntryFlag::Write as u16)
-            | (paging::PageTableEntryFlag::Execute as u16)
-            | (paging::PageTableEntryFlag::User as u16), // required!
-    );
-    let addr = mtimecmp_addr;
-    let page = paging::Page::from_address(paging::PhysicalAddress::new(addr));
-    root_pt.map(
-        paging::VirtualAddress::new(memlayout::CLINT_HART0_MTIMECMP),
-        &page,
-        (paging::PageTableEntryFlag::Read as u16)
-            | (paging::PageTableEntryFlag::Write as u16)
-            | (paging::PageTableEntryFlag::Execute as u16)
-            | (paging::PageTableEntryFlag::User as u16), // required!
-    );
-    let addr = mtime_addr;
-    let page = paging::Page::from_address(paging::PhysicalAddress::new(addr));
-    root_pt.map(
-        paging::VirtualAddress::new(memlayout::CLINT_MTIME),
         &page,
         (paging::PageTableEntryFlag::Read as u16)
             | (paging::PageTableEntryFlag::Write as u16)
