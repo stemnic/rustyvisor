@@ -11,6 +11,10 @@ use core::arch::asm;
 use core::arch::global_asm;
 use core::fmt::Error;
 
+use alloc::boxed::Box;
+use alloc::string::String;
+use alloc::vec;
+
 extern "C" {
     #[link_name = "hypervisor_entrypoint"]
     pub fn entrypoint();
@@ -22,6 +26,13 @@ extern "C" {
 #[no_mangle]
 pub fn rust_hypervisor_entrypoint() -> ! {
     log::info!("hypervisor started");
+
+    let k = Box::<u32>::new(100);
+    println!("Boxed value = {}", *k);
+    
+    let sparkle_heart = vec![240, 159, 146, 150];
+    let sparkle_heart = String::from_utf8(sparkle_heart).unwrap();
+    println!("String = {}", sparkle_heart);
 
     if let Err(e) = init() {
         panic!("Failed to init rvvisor. {:?}", e)

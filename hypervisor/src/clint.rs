@@ -52,7 +52,7 @@ impl Clint {
     }
 }
 
-/* 
+
 
 impl Ipi for Clint {
     #[inline]
@@ -68,7 +68,7 @@ impl Ipi for Clint {
     }
 }
 
-*/
+
 
 impl Timer for Clint {
     #[inline]

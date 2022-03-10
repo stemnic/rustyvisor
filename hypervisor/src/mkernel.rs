@@ -1,6 +1,8 @@
 global_asm!(include_str!("mkernel.S"));
 
 use crate::HEAP_ALLOCATOR;
+use crate::clint;
+use crate::count_harts;
 use crate::hypervisor;
 use crate::memlayout;
 use crate::memlayout::{heap_start, heap_end, HEAP_SIZE};
@@ -16,7 +18,7 @@ extern "C" {
 }
 
 #[no_mangle]
-pub extern "C" fn rust_m_entrypoint() -> ! {
+pub extern "C" fn rust_m_entrypoint(hartid: usize, opqaue: usize) -> ! {
     // init hardware and M-mode registers.
     if let Err(e) = init() {
         panic!("Failed to initialize. {:?}", e);
@@ -31,11 +33,27 @@ pub extern "C" fn rust_m_entrypoint() -> ! {
         panic!("Failed to init logger. {:?}", e);
     }
     log::info!("logger was initialized");
-    log::info!("processor is in m-mode running with hartid: {}", riscv::csr::mhartid::read());
+    log::info!("processor is in m-mode running with hartid: {}", hartid);
     unsafe {
         log::info!("Initing heap implementation: 0x{:016x} -> 0x{:016x} size: 0x{:016x}", heap_start(), heap_end(), HEAP_SIZE);
         HEAP_ALLOCATOR.lock().add_to_heap(heap_start(), heap_end());
     }
+
+    // Init timer with rustsbi interface
+    println!(
+        "[rustsbi] RustSBI version {}, adapting to RISC-V SBI v0.3",
+        rustsbi::VERSION
+    );
+    println!("{}", rustsbi::LOGO);
+    let clint = clint::Clint::new(0x2000000 as *mut u8);
+    use rustsbi::init_ipi;
+    init_ipi(clint);
+    let clint = clint::Clint::new(0x2000000 as *mut u8);
+    use rustsbi::init_timer;
+    init_timer(clint);
+
+    unsafe { count_harts::init_hart_count(opqaue) };
+
     // jump to a next handler while changing CPU mode to HS
     log::info!("jump to hypervisor while chainging CPU mode from M to HS");
     switch_to_hypervisor(hypervisor::entrypoint as unsafe extern "C" fn());

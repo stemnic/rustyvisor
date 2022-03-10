@@ -26,6 +26,7 @@ pub mod memlayout;
 pub mod paging;
 pub mod plic;
 pub mod clint;
+pub mod count_harts;
 
 pub mod mkernel;
 
