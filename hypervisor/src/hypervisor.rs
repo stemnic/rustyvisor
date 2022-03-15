@@ -154,6 +154,28 @@ fn show_trapinfo(
     log::info!("stval: 0x{:016x}", stval,);
     log::info!("scause: 0x{:016x}", scause,);
     log::info!("sstatus: 0x{:016x}", sstatus,);
+
+    log::info!("------- trapframe --------");
+    let user_frame = unsafe{*frame.clone()};
+    let mut i = 0;
+    for reg in user_frame.regs {
+        let reg_name = Register::try_from(i).unwrap();
+        print!("{:<3} = 0x{:016x} ", reg_name, reg);
+		if i % 4 == 3 {
+			println!();
+		} else {
+			print!("| ")
+		}
+        i += 1;
+    }
+    log::info!("------- registers --------");
+    riscv::gpr::dump();
+    log::info!("---------  S csr ---------");
+    riscv::csr::dump_s_csr();
+    log::info!("---------  H csr ---------");
+    riscv::csr::dump_h_csr();
+    log::info!("--------- VS csr ---------");
+    riscv::csr::dump_vs_csr();
 }
 
 #[no_mangle]
@@ -196,7 +218,7 @@ pub extern "C" fn rust_strap_handler(
             }
             // timer interrupt & software interrrupt
             _ => {
-                unimplemented!();
+                unimplemented!("Uknown interrupt id: {}", cause_code);
             }
         }
     } else {
@@ -233,7 +255,7 @@ pub extern "C" fn rust_strap_handler(
             }
             _ => {
                 show_trapinfo(sepc,stval,scause,sstatus,frame);
-                unimplemented!();
+                unimplemented!("Uknown Exception id: {}", cause_code);
             }
         }
     }
