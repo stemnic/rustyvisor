@@ -218,7 +218,7 @@ pub extern "C" fn rust_strap_handler(
             }
             // timer interrupt & software interrrupt
             _ => {
-                unimplemented!("Uknown interrupt id: {}", cause_code);
+                unimplemented!("Unknown interrupt id: {}", cause_code);
             }
         }
     } else {
@@ -255,7 +255,7 @@ pub extern "C" fn rust_strap_handler(
             }
             _ => {
                 show_trapinfo(sepc,stval,scause,sstatus,frame);
-                unimplemented!("Uknown Exception id: {}", cause_code);
+                unimplemented!("Unknown Exception id: {}", cause_code);
             }
         }
     }
