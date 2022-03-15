@@ -5,10 +5,13 @@ use crate::memlayout;
 use crate::paging;
 use crate::plic;
 use crate::riscv;
+use crate::riscv::gpr::Register;
 use crate::uart;
 use crate::virtio;
+use crate::sbi;
 use core::arch::asm;
 use core::arch::global_asm;
+use core::convert::TryFrom;
 use core::fmt::Error;
 
 use alloc::boxed::Box;
@@ -205,6 +208,14 @@ pub extern "C" fn rust_strap_handler(
             }
             10 => {
                 log::info!("environment call from VS-mode at 0x{:016x}", sepc);
+                let user_frame = unsafe{*frame.clone()};
+                match user_frame.regs[17] {
+                    sbi::ecall::EXTENSION_TIMER => {
+
+                    }
+                    _ => {}
+                }
+                
                 // TODO: better handling
                 loop {}
             }
