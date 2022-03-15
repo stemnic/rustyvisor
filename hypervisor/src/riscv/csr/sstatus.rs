@@ -11,6 +11,16 @@ pub fn set_spp(mode: crate::riscv::csr::CpuMode) {
     write((sstatus & spp_mask) | (((mode as usize) & 1) << 7))
 }
 
+pub fn read_spp() -> crate::riscv::csr::CpuMode {
+    let sstatus = read();
+    let spv = (sstatus >> 7) & 0b1;
+    if spv == 0b0 {
+        crate::riscv::csr::CpuMode::U
+    } else {
+        crate::riscv::csr::CpuMode::S
+    }
+}
+
 pub fn set_sie(enabled: bool) {
     let sstatus = read();
     let sie_mask = 1 << 1 as usize;

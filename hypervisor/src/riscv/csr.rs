@@ -13,6 +13,14 @@ pub enum VirtualzationMode {
     Guest = 1,
 }
 
+pub enum PreviousMode {
+    U_mode,
+    HS_mode,
+    M_mode,
+    VU_mode,
+    VS_mode 
+}
+
 pub mod medeleg;
 pub mod mepc;
 pub mod mideleg;

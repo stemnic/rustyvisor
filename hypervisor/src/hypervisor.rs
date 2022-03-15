@@ -176,6 +176,16 @@ fn show_trapinfo(
     riscv::csr::dump_h_csr();
     log::info!("--------- VS csr ---------");
     riscv::csr::dump_vs_csr();
+    log::info!("-------- Prev Mode -------");
+    let prev = riscv::csr::hstatus::previous_mode().unwrap();
+    let mode_str = match prev {
+        riscv::csr::PreviousMode::U_mode  => "User mode (U)",
+        riscv::csr::PreviousMode::HS_mode => "Hypervisor mode (HS)",
+        riscv::csr::PreviousMode::M_mode  => "Machine Mode (M)",
+        riscv::csr::PreviousMode::VU_mode => "Virtual User Mode (VU)",
+        riscv::csr::PreviousMode::VS_mode => "Virtual Supervisor Mode (VS)",
+    };
+    log::info!("Previous Mode before trap: {}", mode_str);
 }
 
 #[no_mangle]
