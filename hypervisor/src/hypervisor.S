@@ -24,8 +24,8 @@ trap_to_hypervisor:
     csrrw	t6, sscratch, t6
 
     # save GPRs    
-    .set 	i, 0
-	.rept	31
+    .set 	i, 1
+	.rept	30
 		save_gp	%i, t6
 		.set	i, i+1
 	.endr
