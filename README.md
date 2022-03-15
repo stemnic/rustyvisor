@@ -2,25 +2,17 @@
 
 **NOTE: This project is still work in progress!**
 
-**rvvisor** is a tiny hypervisor written in Rust, which partially supports RISC-V Hypervisor Extension v0.6.1 included in [Volume II: RISC-V Privileged Architectures V1.12-draft](https://riscv.org/technical/specifications/)). 
-
-![demo image](./public/demo-image.png)
-
 ## Requirements
 
 This project relies on the following tools.
 
 - [riscv/riscv-gnu-toolchain](https://github.com/riscv/riscv-gnu-toolchain)
 - [QEMU with RISC-V Hypervisor Extension Emulation](https://github.com/kvm-riscv/qemu)
+- Rust nightly
 
 To run rvvisor, you need to install them and configure your `PATH` first. 
 
 ## Usage
-
-Here's a list of the possible usecases:
-
-- Run rvvisor with an example kernel
-- (in the future) Run our hypervisor with your own kernel
 
 ### Run rvvisor with an example kernel
 
@@ -31,13 +23,16 @@ rustup target add riscv64gc-unknown-none-elf || true
 
 # build hypervisor
 cd hypervisor
-CC=riscv64-unknown-linux-gnu-gcc cargo build
+cargo build
 cd ..
 
 # build guest
 cd guest
-CC=riscv64-unknown-linux-gnu-gcc cargo build
+cargo build
 cd ..
+
+# change path for qemu in hypervisor/.cargo/config
+vim hypervisor/.cargo/config
 
 # run hypervisor with guest
 cd hypervisor
@@ -46,7 +41,7 @@ cargo run -- -drive file=../guest/target/riscv64gc-unknown-none-elf/debug/riscv-
 
 ### Run rvvisor with your own kernel
 
-Currently, due to the lack of features, famous kernels like [xv6-riscv](https://github.com/mit-pdos/xv6-riscv) or Linux do NOT work upon rrvisor.
+Just change the path of the `--drive file=` to run a custom kernel with the hypervisor.
 
 ### NOTE: Debug rvvisor with GDB
 
@@ -54,12 +49,14 @@ You can debug rvvisor with gdb like this:
 
 ```sh
 # in a shell ...
-$ cargo run -- -S -gdb tcp::9999 # + additional opts
+$ cargo run -- -drive file=../guest/target/riscv64gc-unknown-none-elf/debug/riscv-virt-guest,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0 -S -s # + additional opts
 
 # in another shell ...
-$ riscv64-unknown-linux-gnu-gdb target/riscv64gc-unknown-none-elf/debug/rvvisor
+$ riscv64-unknown-elf-gdb hypervisor/target/riscv64gc-unknown-none-elf/debug/rvvisor 
+
+# add for the added init commands-x gdb_init_commands
 ...
-(gdb) target remote localhost:9999
+(gdb) target remote :1234
 (gdb) continue
 ```
 
