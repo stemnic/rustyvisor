@@ -7,13 +7,13 @@ pub fn set_spp(mode: crate::riscv::csr::CpuMode) {
     }
 
     let sstatus = read();
-    let spp_mask = !(0b1 << 7 as usize);
-    write((sstatus & spp_mask) | (((mode as usize) & 1) << 7))
+    let spp_mask = !(0b1 << 8 as usize);
+    write((sstatus & spp_mask) | (((mode as usize) & 1) << 8))
 }
 
 pub fn read_spp() -> crate::riscv::csr::CpuMode {
     let sstatus = read();
-    let spv = (sstatus >> 7) & 0b1;
+    let spv = (sstatus >> 8) & 0b1;
     if spv == 0b0 {
         crate::riscv::csr::CpuMode::U
     } else {
