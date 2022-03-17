@@ -18,6 +18,12 @@ pub fn handle_ecall_timer_32(function: usize, param0: usize, param1: usize, gues
     }
 }
 
+use crate::timer::VmTimers;
+
+lazy_static::lazy_static! {
+    pub static ref TIMER: spin::Mutex<VmTimers> = spin::Mutex::new(VmTimers::new());
+}
+
 #[cfg(target_pointer_width = "32")]
 #[inline]
 fn set_timer(arg0: usize, arg1: usize, guest_number: usize) -> SbiRet {
@@ -40,10 +46,8 @@ fn set_timer(arg0: usize, guest_number: usize) -> SbiRet {
         // should be probed with probe_extension
         SbiRet::not_supported()
     }
+    
 }
-
-use super::util::OnceFatBox;
-use alloc::boxed::Box;
 
 /// Timer programmer support
 
@@ -58,9 +62,10 @@ pub trait Timer: Send {
     fn set_timer(&mut self, stime_value: u64, guest_id: usize);
 }
 
+//static TIMER: OnceFatBox<dyn Timer + Sync + 'static> = OnceFatBox::new();
+//static mut TIMER: VmTimers = VmTimers::new();
 
-static TIMER: OnceFatBox<dyn Timer + Sync + 'static> = OnceFatBox::new();
-
+/* 
 #[doc(hidden)] // use through a macro
 pub fn init_timer<T: Timer + Sync + 'static>(timer: T) {
     let result = TIMER.set(Box::new(timer));
@@ -68,16 +73,22 @@ pub fn init_timer<T: Timer + Sync + 'static>(timer: T) {
         panic!("load sbi module when already loaded")
     }
 }
+*/
 
+/* 
 #[inline]
 pub fn probe_timer() -> bool {
     TIMER.get().is_some()
 }
+*/
 
 #[inline]
 pub fn set_timer_value(time_value: u64, guest_number: usize) -> bool {
-    if let Some(timer) = TIMER.get() {
+    if let Some(timer_guard) = TIMER.try_lock() {
+        
+        let timer = spin::MutexGuard::leak(timer_guard);
         timer.set_timer(time_value, guest_number);
+        
         true
     } else {
         false

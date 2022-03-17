@@ -1,3 +1,4 @@
+use crate::clint;
 use crate::memlayout;
 use crate::paging;
 use crate::riscv;
@@ -10,7 +11,7 @@ use elf_rs::Elf;
 pub struct Guest {
     pub name: &'static str,
     pub hgatp: riscv::csr::hgatp::Setting,
-    pub sepc: usize,
+    pub sepc: usize
     // TODO: other CSRs & registers
 }
 
@@ -27,7 +28,7 @@ impl Guest {
         Guest {
             name: name,
             hgatp: hgatp,
-            sepc: memlayout::GUEST_DRAM_START,
+            sepc: memlayout::GUEST_DRAM_START
         }
     }
 

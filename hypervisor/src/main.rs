@@ -3,6 +3,7 @@
 
 #![feature(panic_info_message, type_ascription, asm_const)]
 #![feature(default_alloc_error_handler)]
+#![feature(ptr_metadata)]
 
 
 // Heap implementation
@@ -26,6 +27,7 @@ pub mod memlayout;
 pub mod paging;
 pub mod plic;
 pub mod clint;
+pub mod timer;
 pub mod count_harts;
 
 pub mod mkernel;

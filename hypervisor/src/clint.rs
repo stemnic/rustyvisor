@@ -2,8 +2,7 @@
 
 // Based on https://github.com/rustsbi/rustsbi-qemu/blob/main/rustsbi-qemu/src/clint.rs
 
-use rustsbi::{HartMask, Ipi, Timer};
-use rustsbi::SbiRet;
+use crate::sbi::timer::Timer;
 
 use crate::riscv;
 
@@ -53,7 +52,7 @@ impl Clint {
 }
 
 
-
+/* 
 impl Ipi for Clint {
     #[inline]
     fn send_ipi_many(&self, hart_mask: HartMask) -> SbiRet {
@@ -67,8 +66,9 @@ impl Ipi for Clint {
         SbiRet::ok(0)
     }
 }
+*/
 
-
+/* 
 
 impl Timer for Clint {
     #[inline]
@@ -79,3 +79,4 @@ impl Timer for Clint {
     }
 }
 
+*/

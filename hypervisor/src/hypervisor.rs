@@ -6,6 +6,7 @@ use crate::paging;
 use crate::plic;
 use crate::riscv;
 use crate::riscv::gpr::Register;
+use crate::sbi::ecall::SbiRet;
 use crate::uart;
 use crate::virtio;
 use crate::sbi;
@@ -17,6 +18,8 @@ use core::fmt::Error;
 use alloc::boxed::Box;
 use alloc::string::String;
 use alloc::vec;
+
+pub const MAX_NUMBER_OF_GUESTS : usize = 4; 
 
 extern "C" {
     #[link_name = "hypervisor_entrypoint"]
@@ -135,7 +138,7 @@ pub fn switch_to_guest(target: &Guest) -> ! {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct TrapFrame {
     pub regs: [usize; 32],  // 0 - 255
     pub fregs: [usize; 32], // 256 - 511
@@ -241,15 +244,34 @@ pub extern "C" fn rust_strap_handler(
             10 => {
                 log::info!("environment call from VS-mode at 0x{:016x}", sepc);
                 let user_frame = unsafe{*frame.clone()};
-                match user_frame.regs[17] {
-                    sbi::ecall::EXTENSION_TIMER => {
-
-                    }
-                    _ => {}
-                }
+                //println!("{:?}", user_frame);
                 
-                // TODO: better handling
-                loop {}
+                // Hardcoded for now
+                let guest_number = 0;
+
+                let a7 = user_frame.regs[17];
+                let a6 = user_frame.regs[16];
+                let a1 = user_frame.regs[11];
+                let a0 = user_frame.regs[10];
+                let params = [user_frame.regs[10], user_frame.regs[11], user_frame.regs[12], user_frame.regs[13], user_frame.regs[14], user_frame.regs[15]];
+                log::info!("a0: 0x{:x}, a1: 0x{:x}, a6: 0x{:x}, a7: 0x{:x}", a0, a1, a6, a7);
+                let sbi_result = sbi::handle_ecall(a7, a6, params, guest_number);
+                match sbi_result.error {
+                    sbi::ecall::SBI_SUCCESS             =>    log::info!("SBI result SBI_SUCCESS            "),
+                    sbi::ecall::SBI_ERR_NOT_SUPPORTED   =>    log::info!("SBI result SBI_ERR_NOT_SUPPORTED  "),
+                    sbi::ecall::SBI_ERR_INVALID_PARAM   =>    log::info!("SBI result SBI_ERR_INVALID_PARAM  "),
+                    sbi::ecall::SBI_ERR_INVALID_ADDRESS =>    log::info!("SBI result SBI_ERR_INVALID_ADDRESS"),
+                    sbi::ecall::SBI_ERR_FAILED          =>    log::info!("SBI result SBI_ERR_FAILED         "),
+                    _ =>                                      log::info!("SBI result Error {:?}", sbi_result)
+                }
+                log::info!("SBI result {:?}", sbi_result);
+                // Maybe there is a better way todo this
+                unsafe {
+                    (*frame).regs[10] = sbi_result.error;
+                    (*frame).regs[11] = sbi_result.value;
+                }
+                return sepc + 0x4;
+                //loop {}
             }
             21 => {
                 log::info!("exception: load guest page fault at 0x{:016x}", sepc);

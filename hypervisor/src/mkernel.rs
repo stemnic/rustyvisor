@@ -39,24 +39,24 @@ pub extern "C" fn rust_m_entrypoint(hartid: usize, opqaue: usize) -> ! {
         HEAP_ALLOCATOR.lock().add_to_heap(heap_start(), heap_end());
     }
 
-    // Init timer with rustsbi interface
-    println!(
-        "[rustsbi] RustSBI version {}, adapting to RISC-V SBI v0.3",
-        rustsbi::VERSION
-    );
-    println!("{}", rustsbi::LOGO);
-    let clint = clint::Clint::new(0x2000000 as *mut u8);
-    use rustsbi::init_ipi;
-    init_ipi(clint);
-    let clint = clint::Clint::new(0x2000000 as *mut u8);
-    use rustsbi::init_timer;
-    init_timer(clint);
 
     unsafe { count_harts::init_hart_count(opqaue) };
+
+    //init clint timer
+    if let Err(e) = setup_timer() {
+        panic!("Failed to initialize timer. {:?}", e);
+    };
 
     // jump to a next handler while changing CPU mode to HS
     log::info!("jump to hypervisor while chainging CPU mode from M to HS");
     switch_to_hypervisor(hypervisor::entrypoint as unsafe extern "C" fn());
+}
+
+pub fn setup_timer() -> Result<(), Error> {
+    let clint = clint::Clint::new(0x2000000 as *mut u8);
+
+
+    Ok(())
 }
 
 pub fn init() -> Result<(), Error> {
