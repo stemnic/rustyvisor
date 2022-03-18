@@ -137,10 +137,10 @@ pub extern "C" fn rust_mtrap_handler(
     mstatus: usize,        // a3
     frame: *mut TrapFrame, // a4
 ) -> usize {
-    log::info!("trapped to M-mode!");
-    log::info!("Machine trap cause    {:#x}", mcause);
-    log::info!("Machine trap mepc     {:#x}", mepc);
-    log::info!("Machine trap mstatus  {:#x}", mstatus);
+    log::debug!("trapped to M-mode!");
+    log::debug!("Machine trap cause    {:#x}", mcause);
+    log::debug!("Machine trap mepc     {:#x}", mepc);
+    log::debug!("Machine trap mstatus  {:#x}", mstatus);
     let prev = riscv::csr::mstatus::previous_mode().unwrap();
     let mode_str = match prev {
         riscv::csr::PreviousMode::U_mode  => "User mode (U)",
@@ -149,15 +149,13 @@ pub extern "C" fn rust_mtrap_handler(
         riscv::csr::PreviousMode::VU_mode => "Virtual User Mode (VU)",
         riscv::csr::PreviousMode::VS_mode => "Virtual Supervisor Mode (VS)",
     };
-    log::info!("Previous Mode before trap: {}", mode_str);
-    if mstatus == 0xa00000920 {
-        log::info!("Oy state here");
-    }
+    log::debug!("Previous Mode before trap: {}", mode_str);
     let is_async = mcause >> 63 & 1 == 1;
     let cause_code = mcause & 0xfff;
     if is_async {
         match cause_code {
             7 => {
+                //log::info!("M mode timer triggered");
                 riscv::csr::mip::set_stimer();
                 riscv::csr::mie::enable_s_mode_hardware_timer();
                 let timer = clint::Clint::new(0x200_0000 as *mut u8);
@@ -187,6 +185,12 @@ pub extern "C" fn rust_mtrap_handler(
                         unsafe{
                             riscv::interrupt::disable();
                         }
+                    }
+                    m_mode_calls::ENABLE_ALL_TIMERS => {
+                        riscv::csr::mie::enable_m_mode_hardware_timer();
+                    }
+                    m_mode_calls::DISABLE_ALL_TIMERS => {
+                        riscv::csr::mie::clear_m_mode_hardware_timer();
                     }
                     _ => {
                         result = 1;

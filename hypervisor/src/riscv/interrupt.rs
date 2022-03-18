@@ -34,8 +34,8 @@ where
 {
 
     // disable interrupts
-    m_mode_calls::disable_interrupts();
-    
+    m_mode_calls::disable_timers();
+
     //unsafe {
     //    disable();
     //}
@@ -45,7 +45,7 @@ where
     // If the interrupts were active before our `disable` call, then re-enable
     // them. Otherwise, keep them disabled
 
-    m_mode_calls::enable_interrupts();
+    m_mode_calls::enable_timers();
 
     //if mstatus::is_mie_set() {
     //    unsafe {
