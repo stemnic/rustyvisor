@@ -1,5 +1,7 @@
 const FUNCTION_TIMER_SET_TIMER: usize = 0x0;
 use super::ecall::SbiRet;
+use crate::riscv;
+
 #[inline]
 #[cfg(target_pointer_width = "64")]
 pub fn handle_ecall_timer_64(function: usize, param0: usize, guest_number: usize) -> SbiRet {
@@ -86,6 +88,8 @@ pub fn probe_timer() -> bool {
 pub fn set_timer_value(time_value: u64, guest_number: usize) -> bool {
     let mut timer = TIMER.lock();
     timer.set_timer(time_value, guest_number);
+    riscv::csr::hvip::clear_timing_interrupt();
+    log::info!("Setting timer mtimecmp {} for guest{}", time_value, guest_number);
     
     true
 }

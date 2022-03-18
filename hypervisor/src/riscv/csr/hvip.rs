@@ -13,6 +13,10 @@ pub fn trigger_timing_interrupt(){
     write( VSTIP | read() );
 }
 
+pub fn clear_timing_interrupt(){
+    write( !(VSTIP) & read() );
+}
+
 pub fn trigger_external_interrupt(){
     write( VSEIP | read() );
 }

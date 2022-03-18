@@ -2,6 +2,7 @@ use core::fmt::Error;
 use crate::hypervisor::MAX_NUMBER_OF_GUESTS;
 use crate::sbi::timer::Timer;
 
+#[derive(Debug, Copy, Clone)]
 pub struct VmTimers {
     timers : [VmTimer; MAX_NUMBER_OF_GUESTS]
 }
@@ -13,15 +14,21 @@ impl VmTimers {
         }
     }
     pub fn tick_vm_timers(&mut self, amount: usize ){
-        for mut timer in self.timers{
-            timer.tick(amount as u64)
+        let mut i = 0;
+        while i < MAX_NUMBER_OF_GUESTS-1 {
+            self.timers[i].tick(amount as u64);
+            i += 1;
+        }
+    }
+    pub fn debug_print(&self) {
+        for timer in self.timers {
+            log::info!("timer {}, mtime value: {}, mtimecmp value: {}", timer.enabled, timer.mtime, timer.mtimecmp);
         }
     }
     pub fn check_timers(&self) -> [bool; MAX_NUMBER_OF_GUESTS] {
         let mut vm_timer_list = [false ; MAX_NUMBER_OF_GUESTS];
         let mut i = 0;
-
-        while i < MAX_NUMBER_OF_GUESTS {
+        while i < MAX_NUMBER_OF_GUESTS-1 {
             let vmtimer = self.timers[i];
             if vmtimer.enabled {
                 if vmtimer.mtime >= vmtimer.mtimecmp {
@@ -34,7 +41,7 @@ impl VmTimers {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct VmTimer {
     enabled: bool,
     mtime: u64,
@@ -57,7 +64,9 @@ impl VmTimer {
     }
 
     pub fn set_timer(&mut self, amount: u64){
+        self.enabled = true;
         self.mtimecmp = amount;
+        self.mtime = 0;
     }
 }
 

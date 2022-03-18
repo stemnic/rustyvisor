@@ -36,13 +36,6 @@ extern "C" {
 pub fn rust_hypervisor_entrypoint() -> ! {
     log::info!("hypervisor started");
 
-    let k = Box::<u32>::new(100);
-    println!("Boxed value = {}", *k);
-    
-    let sparkle_heart = vec![240, 159, 146, 150];
-    let sparkle_heart = String::from_utf8(sparkle_heart).unwrap();
-    println!("String = {}", sparkle_heart);
-
     if let Err(e) = riscv::interrupt::free(|_| init()) {
         panic!("Failed to init rvvisor. {:?}", e)
     }
@@ -245,16 +238,19 @@ pub extern "C" fn rust_strap_handler(
                     0
                 );
 
-                if let Some(timer_guard) = timer::TIMER.try_lock() {
-                    
-                    let mut timer = timer_guard;
-                    timer.tick_vm_timers(1000);
-                    let timer_trigger_list = (*timer).check_timers();
+                if let Some(mut timer) = timer::TIMER.try_lock() {
+                    //let mut timer = timer::TIMER.lock();
+                    timer.tick_vm_timers(10_000);
+                    let timer_trigger_list = timer.check_timers();
+                    //println!("{:?}", timer_trigger_list);
+                    //timer.debug_print();
+
                     // TODO: loop through all avalible guests
                     // assuming 0 now since we have hardcoded one vm
                     let guest0_timer_intr_trigger = timer_trigger_list [0];
                     if guest0_timer_intr_trigger {
-                        riscv::csr::vsip::set_vstimer();
+                        log::info!("triggering timer interrupt on guest0");
+                        riscv::csr::hvip::trigger_timing_interrupt();
                     }
                     
                 } 
@@ -304,14 +300,14 @@ pub extern "C" fn rust_strap_handler(
                 //loop {}
             }
             21 => {
-                log::info!("exception: load guest page fault at 0x{:016x}", sepc);
                 show_trapinfo(sepc,stval,scause,sstatus,frame);
+                log::info!("exception: load guest page fault at 0x{:016x}", sepc);
                 // TODO (enhancement): demand paging
                 loop {}
             }
             23 => {
-                log::info!("exception: store/amo guest-page fault at 0x{:016x}", sepc);
                 show_trapinfo(sepc,stval,scause,sstatus,frame);
+                log::info!("exception: store/amo guest-page fault at 0x{:016x}", sepc);
                 // TODO: better handling
                 loop {}
             }

@@ -35,7 +35,7 @@ trap_to_mkernel:
 	csrr	a2, mcause
 	csrr	a3, mstatus
 	csrr	a4, mscratch
-	la		sp, _intr_stack_end
+	la		sp, _mintr_stack_end
 
     # -------
 
