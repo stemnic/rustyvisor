@@ -236,7 +236,7 @@ pub extern "C" fn rust_strap_handler(
                 //timer interrupt
                 //show_trapinfo(sepc,stval,scause,sstatus,frame);
                 log::info!("Timer interrupt fired");
-                //riscv::csr::sip::clear_stimer();
+                riscv::csr::sip::clear_stimer();
                 riscv::csr::sie::clear_hardware_timer();
                 assert_eq!(
                     riscv::csr::sie::read() >> 5 & 0b1,

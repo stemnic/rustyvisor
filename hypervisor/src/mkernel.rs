@@ -137,14 +137,28 @@ pub extern "C" fn rust_mtrap_handler(
     frame: *mut TrapFrame, // a4
 ) -> usize {
     log::info!("trapped to M-mode!");
-    let mcause = riscv::csr::mcause::read();
-    log::info!("Machine trap cause {:#x}", mcause);
+    log::info!("Machine trap cause    {:#x}", mcause);
+    log::info!("Machine trap mepc     {:#x}", mepc);
+    log::info!("Machine trap mstatus  {:#x}", mstatus);
+    let prev = riscv::csr::mstatus::previous_mode().unwrap();
+    let mode_str = match prev {
+        riscv::csr::PreviousMode::U_mode  => "User mode (U)",
+        riscv::csr::PreviousMode::HS_mode => "Hypervisor mode (HS)",
+        riscv::csr::PreviousMode::M_mode  => "Machine Mode (M)",
+        riscv::csr::PreviousMode::VU_mode => "Virtual User Mode (VU)",
+        riscv::csr::PreviousMode::VS_mode => "Virtual Supervisor Mode (VS)",
+    };
+    log::info!("Previous Mode before trap: {}", mode_str);
+    if mstatus == 0xa00000920 {
+        log::info!("Oy state here");
+    }
     let is_async = mcause >> 63 & 1 == 1;
     let cause_code = mcause & 0xfff;
     if is_async {
         match cause_code {
             7 => {
                 riscv::csr::mip::set_stimer();
+                riscv::csr::mie::enable_s_mode_hardware_timer();
                 let timer = clint::Clint::new(0x200_0000 as *mut u8);
                 timer.set_timer(0, timer.get_mtime() + 10_000_000);
                 //riscv::csr::mie::clear_m_mode_hardware_timer();
