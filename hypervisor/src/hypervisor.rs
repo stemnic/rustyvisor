@@ -4,6 +4,7 @@ use crate::guest::Guest;
 use crate::memlayout;
 use crate::paging;
 use crate::plic;
+use crate::clint;
 use crate::riscv;
 use crate::riscv::gpr::Register;
 use crate::sbi::ecall::SbiRet;
@@ -110,6 +111,8 @@ fn enable_interrupt() {
 
     // sie; enable external interrupt
     // TODO (enhancement): timer interrupt
+    riscv::csr::sie::enable_hardware_timer();
+
     // TODO (enhancement): software interrupt
     let current_sie = riscv::csr::sie::read();
     riscv::csr::sie::write(current_sie | (riscv::csr::sie::SEIE as usize));
@@ -229,6 +232,18 @@ pub extern "C" fn rust_strap_handler(
                     panic!("invalid state")
                 }
             }
+            5 => {
+                //timer interrupt
+                //show_trapinfo(sepc,stval,scause,sstatus,frame);
+                log::info!("Timer interrupt fired");
+                //riscv::csr::sip::clear_stimer();
+                riscv::csr::sie::clear_hardware_timer();
+                assert_eq!(
+                    riscv::csr::sie::read() >> 5 & 0b1,
+                    0
+                );
+                
+            }
             // timer interrupt & software interrrupt
             _ => {
                 unimplemented!("Unknown interrupt id: {}", cause_code);
@@ -270,7 +285,7 @@ pub extern "C" fn rust_strap_handler(
                     (*frame).regs[10] = sbi_result.error;
                     (*frame).regs[11] = sbi_result.value;
                 }
-                return sepc + 0x4;
+                return sepc + 0x4; // Skips to the next instruction in guest
                 //loop {}
             }
             21 => {

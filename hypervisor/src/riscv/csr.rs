@@ -25,6 +25,7 @@ pub mod medeleg;
 pub mod mepc;
 pub mod mideleg;
 pub mod mie;
+pub mod mip;
 pub mod misa;
 pub mod mstatus;
 pub mod mtvec;

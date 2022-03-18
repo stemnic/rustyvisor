@@ -53,8 +53,12 @@ pub extern "C" fn rust_m_entrypoint(hartid: usize, opqaue: usize) -> ! {
 }
 
 pub fn setup_timer() -> Result<(), Error> {
-    let clint = clint::Clint::new(0x2000000 as *mut u8);
 
+    // clint: enable timer interrupts
+    let timer = clint::Clint::new(0x200_0000 as *mut u8);
+    timer.set_timer(0, timer.get_mtime() + 10_000_000);
+    // enable timer interrupts
+    riscv::csr::mie::enable_m_mode_hardware_timer();
 
     Ok(())
 }
@@ -64,7 +68,7 @@ pub fn init() -> Result<(), Error> {
     uart::Uart::new(memlayout::UART_BASE).init();
 
     // medeleg: delegate synchoronous exceptions except for ecall from HS-mode (bit 9)
-    riscv::csr::medeleg::write(0xffffff ^ riscv::csr::medeleg::HYPERVISOR_ECALL);
+    riscv::csr::medeleg::write(0xffffff ^ riscv::csr::medeleg::HYPERVISOR_ECALL );
 
     // mideleg: delegate all interruptions
     riscv::csr::mideleg::write(
@@ -116,8 +120,45 @@ pub fn switch_to_hypervisor<T: util::jump::Target + Copy>(target: T) -> ! {
     riscv::instruction::mret();
 }
 
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct TrapFrame {
+    pub regs: [usize; 32],  // 0 - 255
+    pub fregs: [usize; 32], // 256 - 511
+    pub pc: usize,          // 512
+}
+
 #[no_mangle]
-pub extern "C" fn rust_mtrap_handler() {
+pub extern "C" fn rust_mtrap_handler(
+    mepc: usize,           // a0
+    mtval: usize,          // a1
+    mcause: usize,         // a2
+    mstatus: usize,        // a3
+    frame: *mut TrapFrame, // a4
+) -> usize {
     log::info!("trapped to M-mode!");
-    log::info!("Machine trap cause {:#x}", riscv::csr::mcause::read());
+    let mcause = riscv::csr::mcause::read();
+    log::info!("Machine trap cause {:#x}", mcause);
+    let is_async = mcause >> 63 & 1 == 1;
+    let cause_code = mcause & 0xfff;
+    if is_async {
+        match cause_code {
+            7 => {
+                riscv::csr::mip::set_stimer();
+                let timer = clint::Clint::new(0x200_0000 as *mut u8);
+                timer.set_timer(0, timer.get_mtime() + 10_000_000);
+                //riscv::csr::mie::clear_m_mode_hardware_timer();
+            }
+            _ => {
+                unimplemented!("Unknown M-mode interrupt id: {}", cause_code);
+            }
+        }
+    } else {
+        match cause_code {
+            _ => {
+                unimplemented!("Unknown M-mode Exception id: {}", cause_code);
+            }
+        }
+    }
+    mepc
 }

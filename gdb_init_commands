@@ -12,7 +12,7 @@ add-symbol-file /Users/stemnic/gits/rvvisor/guest/target/riscv64gc-unknown-none-
 #break sos::kinit:7
 #break hypervisor.rs:208
 break kernel.rs:20
-break src/hypervisor.rs:269
+break src/hypervisor.rs:237
 #break dump_h_csr
 #break trap_to_hypervisor
 #break 
