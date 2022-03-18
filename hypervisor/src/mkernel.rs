@@ -9,6 +9,7 @@ use crate::memlayout::{heap_start, heap_end, HEAP_SIZE};
 use crate::riscv;
 use crate::uart;
 use crate::util;
+use crate::m_mode_calls;
 use core::arch::asm;
 use core::arch::global_asm;
 use core::fmt::Error;
@@ -169,6 +170,36 @@ pub extern "C" fn rust_mtrap_handler(
         }
     } else {
         match cause_code {
+            9 => {
+                log::info!("environment call from HS-mode at 0x{:016x}", mepc);
+                let hypervisor_frame = unsafe{*frame.clone()};
+                let a1 = hypervisor_frame.regs[11];
+                let a0 = hypervisor_frame.regs[10];
+                let mut result = 0;
+
+                match a0 {
+                    m_mode_calls::ENABLE_ALL_INTERRUPTS => {
+                        unsafe{
+                            riscv::interrupt::enable();
+                        }
+                    }
+                    m_mode_calls::DISABLE_ALL_INTERRUPTS => {
+                        unsafe{
+                            riscv::interrupt::disable();
+                        }
+                    }
+                    _ => {
+                        result = 1;
+                        log::info!("Unimplemented ecall from hypervisor: {}", a0);
+                    }
+                }
+
+                unsafe {
+                    (*frame).regs[10] = result;
+                }
+
+                return mepc + 0x4;
+            }
             _ => {
                 unimplemented!("Unknown M-mode Exception id: {}", cause_code);
             }

@@ -1,8 +1,44 @@
 use core::fmt::Error;
-use super::PreviousMode;
+use super::{PreviousMode};
 
 define_read!(0x300);
 define_write!(0x300);
+
+pub const MIE: usize = 0b1 << 3;
+pub const SIE: usize = 0b1 << 1;
+
+pub fn is_mie_set() -> bool {
+    let mstatus = read();
+    if ((mstatus >> 3) & 0b1) == 0b1 {
+        true
+    } else {
+        false
+    }
+}
+
+pub fn set_mie() {
+    let mstatus = read();
+    let mie_mask = MIE;
+    write(mstatus | mie_mask);
+}
+
+pub fn clear_mie() {
+    let mstatus = read();
+    let mie_mask = !(MIE);
+    write(mstatus & mie_mask);
+}
+
+pub fn set_sie() {
+    let mstatus = read();
+    let mie_mask = SIE;
+    write(mstatus | mie_mask);
+}
+
+pub fn clear_sie() {
+    let mstatus = read();
+    let sie_mask = !(SIE);
+    write(mstatus & sie_mask);
+}
 
 pub fn set_mpp(mode: crate::riscv::csr::CpuMode) {
     let mstatus = read();

@@ -38,5 +38,6 @@ pub mod hypervisor;
 pub mod debug;
 pub mod util;
 pub mod sbi;
+pub mod m_mode_calls;
 
 pub mod virtio;

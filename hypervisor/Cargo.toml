@@ -13,6 +13,7 @@ device_tree = { git = "https://github.com/rcore-os/device_tree-rs/" }
 lazy_static = { version = "1", features = ["spin_no_std"] }
 spin = "0.9"
 buddy_system_allocator = "0.8"
+bare-metal = "1.0.0"
 
 [build-dependencies]
 cc = "1.0.66"

@@ -41,7 +41,7 @@ pub fn rust_hypervisor_entrypoint() -> ! {
     let sparkle_heart = String::from_utf8(sparkle_heart).unwrap();
     println!("String = {}", sparkle_heart);
 
-    if let Err(e) = init() {
+    if let Err(e) = riscv::interrupt::free(|_| init()) {
         panic!("Failed to init rvvisor. {:?}", e)
     }
     log::info!("succeeded in initializing rvvisor");
@@ -50,9 +50,9 @@ pub fn rust_hypervisor_entrypoint() -> ! {
     let guest_name = "guest01";
     log::info!("a new guest instance: {}", guest_name);
     log::info!("-> create metadata set");
-    let mut guest = Guest::new(guest_name);
+    let mut guest = riscv::interrupt::free(|_| Guest::new(guest_name));
     log::info!("-> load a tiny kernel image");
-    guest.load_from_disk();
+    riscv::interrupt::free(|_| guest.load_from_disk());
 
     log::info!("switch to guest");
     switch_to_guest(&guest);

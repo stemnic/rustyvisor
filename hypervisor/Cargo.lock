@@ -229,6 +229,7 @@ dependencies = [
 name = "rvvisor"
 version = "0.1.0"
 dependencies = [
+ "bare-metal",
  "buddy_system_allocator",
  "cc",
  "device_tree",
