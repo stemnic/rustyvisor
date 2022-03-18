@@ -8,6 +8,8 @@ use crate::clint;
 use crate::riscv;
 use crate::riscv::gpr::Register;
 use crate::sbi::ecall::SbiRet;
+use crate::sbi::timer;
+use crate::timer::VmTimers;
 use crate::uart;
 use crate::virtio;
 use crate::sbi;
@@ -235,14 +237,27 @@ pub extern "C" fn rust_strap_handler(
             5 => {
                 //timer interrupt
                 //show_trapinfo(sepc,stval,scause,sstatus,frame);
-                log::info!("Timer interrupt fired");
+                log::info!("Hypervisor timer interrupt fired");
                 riscv::csr::sip::clear_stimer();
                 riscv::csr::sie::clear_hardware_timer();
                 assert_eq!(
                     riscv::csr::sie::read() >> 5 & 0b1,
                     0
                 );
-                
+
+                if let Some(timer_guard) = timer::TIMER.try_lock() {
+                    
+                    let mut timer = timer_guard;
+                    timer.tick_vm_timers(1000);
+                    let timer_trigger_list = (*timer).check_timers();
+                    // TODO: loop through all avalible guests
+                    // assuming 0 now since we have hardcoded one vm
+                    let guest0_timer_intr_trigger = timer_trigger_list [0];
+                    if guest0_timer_intr_trigger {
+                        riscv::csr::vsip::set_vstimer();
+                    }
+                    
+                } 
             }
             // timer interrupt & software interrrupt
             _ => {

@@ -17,6 +17,21 @@ impl VmTimers {
             timer.tick(amount as u64)
         }
     }
+    pub fn check_timers(&self) -> [bool; MAX_NUMBER_OF_GUESTS] {
+        let mut vm_timer_list = [false ; MAX_NUMBER_OF_GUESTS];
+        let mut i = 0;
+
+        while i < MAX_NUMBER_OF_GUESTS {
+            let vmtimer = self.timers[i];
+            if vmtimer.enabled {
+                if vmtimer.mtime >= vmtimer.mtimecmp {
+                    vm_timer_list[i] = true;
+                }
+            }
+            i += 1;
+        }
+        return vm_timer_list
+    }
 }
 
 #[derive(Copy, Clone)]

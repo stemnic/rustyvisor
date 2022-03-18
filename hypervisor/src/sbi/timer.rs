@@ -84,13 +84,8 @@ pub fn probe_timer() -> bool {
 
 #[inline]
 pub fn set_timer_value(time_value: u64, guest_number: usize) -> bool {
-    if let Some(timer_guard) = TIMER.try_lock() {
-        
-        let timer = spin::MutexGuard::leak(timer_guard);
-        timer.set_timer(time_value, guest_number);
-        
-        true
-    } else {
-        false
-    }
+    let mut timer = TIMER.lock();
+    timer.set_timer(time_value, guest_number);
+    
+    true
 }
