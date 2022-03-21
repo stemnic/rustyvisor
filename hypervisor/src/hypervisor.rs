@@ -13,6 +13,7 @@ use crate::timer::VmTimers;
 use crate::uart;
 use crate::virtio;
 use crate::sbi;
+use crate::global_const::{HYPERVISOR_TIMER_TICK};
 use core::arch::asm;
 use core::arch::global_asm;
 use core::convert::TryFrom;
@@ -21,8 +22,6 @@ use core::fmt::Error;
 use alloc::boxed::Box;
 use alloc::string::String;
 use alloc::vec;
-
-pub const MAX_NUMBER_OF_GUESTS : usize = 4; 
 
 extern "C" {
     #[link_name = "hypervisor_entrypoint"]
@@ -230,7 +229,7 @@ pub extern "C" fn rust_strap_handler(
             5 => {
                 //timer interrupt
                 //show_trapinfo(sepc,stval,scause,sstatus,frame);
-                log::info!("Hypervisor timer interrupt fired");
+                log::debug!("Hypervisor timer interrupt fired");
                 riscv::csr::sip::clear_stimer();
                 riscv::csr::sie::clear_hardware_timer();
                 assert_eq!(
@@ -240,7 +239,7 @@ pub extern "C" fn rust_strap_handler(
 
                 if let Some(mut timer) = timer::TIMER.try_lock() {
                     //let mut timer = timer::TIMER.lock();
-                    timer.tick_vm_timers(10_000);
+                    timer.tick_vm_timers(HYPERVISOR_TIMER_TICK);
                     let timer_trigger_list = timer.check_timers();
                     //println!("{:?}", timer_trigger_list);
                     //timer.debug_print();

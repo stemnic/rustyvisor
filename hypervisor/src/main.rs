@@ -37,6 +37,7 @@ pub mod hypervisor;
 
 pub mod debug;
 pub mod util;
+pub mod global_const;
 pub mod sbi;
 pub mod m_mode_calls;
 

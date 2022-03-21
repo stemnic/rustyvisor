@@ -10,6 +10,7 @@ use crate::riscv;
 use crate::uart;
 use crate::util;
 use crate::m_mode_calls;
+use crate::global_const::M_MODE_TIMER_VALUE;
 use core::arch::asm;
 use core::arch::global_asm;
 use core::fmt::Error;
@@ -159,7 +160,7 @@ pub extern "C" fn rust_mtrap_handler(
                 riscv::csr::mip::set_stimer();
                 riscv::csr::mie::enable_s_mode_hardware_timer();
                 let timer = clint::Clint::new(0x200_0000 as *mut u8);
-                timer.set_timer(0, timer.get_mtime() + 10_000_000);
+                timer.set_timer(0, timer.get_mtime() + M_MODE_TIMER_VALUE);
                 //riscv::csr::mie::clear_m_mode_hardware_timer();
             }
             _ => {

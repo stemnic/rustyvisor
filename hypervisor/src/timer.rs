@@ -1,5 +1,5 @@
 use core::fmt::Error;
-use crate::hypervisor::MAX_NUMBER_OF_GUESTS;
+use crate::global_const::MAX_NUMBER_OF_GUESTS;
 use crate::sbi::timer::Timer;
 
 #[derive(Debug, Copy, Clone)]
