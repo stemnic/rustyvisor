@@ -19,6 +19,7 @@ impl Guest {
     pub fn new(name: &'static str) -> Guest {
         // hgatp
         let root_pt = prepare_gpat_pt().unwrap();
+        root_pt.print_page_allocations();
         let hgatp = riscv::csr::hgatp::Setting::new(
             riscv::csr::hgatp::Mode::Sv39x4,
             0,
