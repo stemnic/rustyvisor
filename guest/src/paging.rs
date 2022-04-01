@@ -367,15 +367,15 @@ impl PageTable {
                         if total_pages != 0 {
                             println!("...");
                             println!("Virt: 0x{:x} => Phys: 0x{:x}", virtual_addr, physical_addr); 
-                            println!("Num pages after each other: {}", total_pages);   
+                            println!("Num pages after each other: {}", total_pages);
+                            println!("")   
                         }else{
                             println!("")
                         }
                         physical_addr = new_physical_addr;
                         total_pages = total_pages + 1;
                         virtual_addr = VirtualAddress::new_from_vpn(vpn).to_usize() + i * PAGE_SIZE as usize;
-                        print!("Virt: 0x{:x} => Phys: 0x{:x}", virtual_addr, new_physical_addr);
-                        println!();
+                        println!("Virt: 0x{:x} => Phys: 0x{:x}", virtual_addr, new_physical_addr);
                         total_pages = 0;
                     }
                 } else {
@@ -390,7 +390,8 @@ impl PageTable {
         if total_pages != 0 {
             println!("...");
             println!("Virt: 0x{:x} => Phys: 0x{:x}", virtual_addr, physical_addr); 
-            println!("Num pages after each other: {}", total_pages);   
+            println!("Num pages after each other: {}", total_pages);
+            println!("")   
         }
         total_valid_entries
     }

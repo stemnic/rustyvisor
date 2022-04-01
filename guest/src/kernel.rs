@@ -76,7 +76,7 @@ fn setup_vm() {
         + 1;
     for i in 0..map_page_num {
         let vaddr = memlayout::USER_TEST_START + i * (memlayout::PAGE_SIZE as usize);
-        let page = paging::alloc();
+        let page = paging::Page::from_address(paging::PhysicalAddress::new(vaddr));
         root_pt.map(
             paging::VirtualAddress::new(vaddr),
             &page,
