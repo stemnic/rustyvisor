@@ -93,6 +93,7 @@ fn setup_vm() {
     satp |=  root_pt.page.address().to_ppn();
 
     println!("satp to be written: 0x{:016x}", satp);
+    root_pt.print_page_allocations();
 
     unsafe{
         asm!(

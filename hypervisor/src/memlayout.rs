@@ -73,3 +73,6 @@ pub static GUEST_UART_BASE: usize = 0x1000_0000;
 // This value should be page-aligned.
 pub static GUEST_DRAM_START: usize = 0x8000_0000;
 pub static GUEST_DRAM_END: usize = 0x8200_0000;
+
+pub static GUEST_TEST_AREA_START: usize = 0x8201_0000;
+pub static GUEST_TEST_AREA_END: usize   = 0x8202_0000;

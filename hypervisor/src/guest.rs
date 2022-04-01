@@ -184,5 +184,21 @@ fn prepare_gpat_pt() -> Result<paging::PageTable, Error> {
         )
     }
 
+    let map_page_num = (memlayout::GUEST_TEST_AREA_END - memlayout::GUEST_TEST_AREA_START)
+        / (memlayout::PAGE_SIZE as usize)
+        + 1;
+    for i in 0..map_page_num {
+        let vaddr = memlayout::GUEST_TEST_AREA_START + i * (memlayout::PAGE_SIZE as usize);
+        let page = paging::alloc();
+        root_pt.map(
+            paging::VirtualAddress::new(vaddr),
+            &page,
+            (paging::PageTableEntryFlag::Read as u16)
+                | (paging::PageTableEntryFlag::Write as u16)
+                | (paging::PageTableEntryFlag::Execute as u16)
+                | (paging::PageTableEntryFlag::User as u16), // required!
+        )
+    }
+
     Ok(root_pt)
 }

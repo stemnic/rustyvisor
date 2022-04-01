@@ -13,7 +13,7 @@ use crate::timer::VmTimers;
 use crate::uart;
 use crate::virtio;
 use crate::sbi;
-use crate::global_const::{HYPERVISOR_TIMER_TICK};
+use crate::global_const::{HYPERVISOR_TIMER_TICK, MAX_NUMBER_OF_GUESTS};
 use core::arch::asm;
 use core::arch::global_asm;
 use core::convert::TryFrom;
@@ -29,6 +29,10 @@ extern "C" {
 
     #[link_name = "trap_to_hypervisor"]
     pub fn trap();
+}
+
+struct hypervisor {
+    hypervisor_guests : [Guest ; MAX_NUMBER_OF_GUESTS]
 }
 
 #[no_mangle]

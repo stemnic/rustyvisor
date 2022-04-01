@@ -17,6 +17,15 @@ impl VirtualAddress {
         VirtualAddress { addr: addr }
     }
 
+    pub fn new_from_vpn(vpn : [usize; 3]) -> VirtualAddress {
+        let addr = 
+            (vpn[2]) << 30 |
+            (vpn[1]) << 21 |
+            (vpn[0]) << 12 
+        ;
+        VirtualAddress { addr: addr }
+    }
+
     pub fn to_vpn(&self) -> [usize; 3] {
         [
             (self.addr >> 12) & 0x1ff, //L0 9bit
@@ -334,15 +343,93 @@ impl PageTable {
             };
         }
     }
-    pub fn print_page_allocations(&self){
-        // Walking all the entries in the pagetable
-        let pt = PageTable::from_page(self.page);
+
+    fn print_walk_page_table(&self, next_pt:PageTable, level: usize, vpn: [usize ; 3]) -> usize {
+        // Very messy but it works
+        let mut physical_addr = 0;
+        let mut virtual_addr = 0;
+        let mut total_pages = 0;
+        let mut total_valid_entries = 0;
         for i in 0..512{
-            let entry = pt.get_entry(i);
+            let entry = next_pt.get_entry(i);
             if entry.is_valid(){
-                
+                total_valid_entries = total_valid_entries + 1;
+                if level == 0 {
+                    let new_physical_addr = entry.to_usize() << 2 & !0x3ff ;
+                    //print!("vpn:{:?} ppn:{:?} entry: {:?}, physical 0x{:x} ", vpn, entry.ppn, entry, new_physical_addr);
+                    if new_physical_addr - PAGE_SIZE as usize == physical_addr {
+                        //print!("SAME ");
+                        virtual_addr = VirtualAddress::new_from_vpn(vpn).to_usize() + i * PAGE_SIZE as usize;
+                        //println!("Virt: 0x{:x} => Phys: 0x{:x}", virtual_addr, new_physical_addr);
+                        physical_addr = new_physical_addr;
+                        total_pages = total_pages + 1;
+                    } else {
+                        if total_pages != 0 {
+                            println!("...");
+                            println!("Virt: 0x{:x} => Phys: 0x{:x}", virtual_addr, physical_addr); 
+                            println!("Num pages after each other: {}", total_pages);   
+                        }else{
+                            println!("")
+                        }
+                        physical_addr = new_physical_addr;
+                        total_pages = total_pages + 1;
+                        virtual_addr = VirtualAddress::new_from_vpn(vpn).to_usize() + i * PAGE_SIZE as usize;
+                        print!("Virt: 0x{:x} => Phys: 0x{:x}", virtual_addr, new_physical_addr);
+                        println!();
+                        total_pages = 0;
+                    }
+                } else {
+                    let mut vpn = vpn;
+                    vpn[level] = i;
+                    let next_page = entry.next_page();
+                    let new_pt = PageTable::from_page(next_page);
+                    total_valid_entries = total_valid_entries + self.print_walk_page_table(new_pt, level - 1, vpn);
+                }
             }
         }
+        if total_pages != 0 {
+            println!("...");
+            println!("Virt: 0x{:x} => Phys: 0x{:x}", virtual_addr, physical_addr); 
+            println!("Num pages after each other: {}", total_pages);   
+        }
+        total_valid_entries
+    }
+
+    pub fn print_page_allocations(&self){
+        // Walking all the entries in the pagetable
+        // assumes Sv39
+        if unsafe {initialized} {
+            let pt = PageTable::from_page(self.page);
+            println!();
+            println!(
+                     "PAGE ALLOCATION TABLE\nALLOCATED: 0x{:x} -> 0x{:x}",
+                     unsafe{base_addr}, 
+                     unsafe{base_addr + (PAGE_SIZE as usize) * (last_index - 1)}
+            );
+            println!("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+            let vpn = [0 ; 3];
+            let total_entries = self.print_walk_page_table(pt, 2, vpn);
+            //println!("{:?}", pagemapping);
+
+            println!("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+            println!(
+                    "Allocated: {:>6} pages ({:>10} bytes).",
+                    total_entries,
+                    total_entries * PAGE_SIZE as usize
+            );
+            /* 
+            println!(
+                     "Free     : {:>6} pages ({:>10} bytes).",
+                     num_pages - num,
+                     (num_pages - num) * PAGE_SIZE
+            );
+            */
+            println!();
+            
+        } else {
+            println!("Pageing not initilized");
+        }
+
     }
 }
 

@@ -11,8 +11,15 @@ add-symbol-file /Users/stemnic/gits/rvvisor/guest/target/riscv64gc-unknown-none-
 #break _start
 #break sos::kinit:7
 #break hypervisor.rs:208
-break kernel.rs:20
-break src/hypervisor.rs:237
+
+#break kernel.rs:20
+#break src/kernel.rs:170
+#break src/kernel.rs:riscv_virt_guest::kernel::setup_vm
+break src/kernel.rs:27
+break src/hypervisor.rs:296
+break riscv_virt_guest::kernel::sbi_call
+break riscv_virt_guest::paging::PageTable::print_page_allocations
+#break src/mkernel.rs:144
 #break dump_h_csr
 #break trap_to_hypervisor
 #break 
