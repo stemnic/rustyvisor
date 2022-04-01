@@ -3,6 +3,7 @@
 
 .section .text.kernel
 .global trap_to_kernel
+.global _intr_stack_end
 
 #.macro load_gp i, base
 #	ld	x\i, ((\i)*8)(\base)

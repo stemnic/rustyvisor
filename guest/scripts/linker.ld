@@ -7,6 +7,7 @@ SECTIONS
     . = 0x80000000; 
     .text.entrypoint : 
     {        
+        PROVIDE(_elf_start = .);
         *(.text.entrypoint);
     }
 
@@ -29,6 +30,7 @@ SECTIONS
     _bss_start = .;
     .bss :
     {
-        *(.bss .bss.*);        
+        *(.bss .bss.*);
+        PROVIDE(_elf_end = .);
     }  
 }

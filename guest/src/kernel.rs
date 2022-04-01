@@ -1,6 +1,7 @@
 global_asm!(include_str!("kernel.S"));
 
 use crate::memlayout;
+use crate::paging;
 use crate::uart;
 use crate::sbi::ecall::{SbiRet, EXTENSION_TIMER};
 use core::arch::asm;
@@ -19,6 +20,9 @@ pub extern "C" fn rust_entrypoint() -> ! {
     };
     println!("hello world from a guest");
 
+
+    setup_vm();
+
     let call = sbi_call(EXTENSION_TIMER, 0x0, 0xdead, 0xbeef);
     println!("Sbi call error: {},  value: {}", call.error, call.value);
     assert_eq!(call.error, 0);
@@ -27,6 +31,76 @@ pub extern "C" fn rust_entrypoint() -> ! {
     enable_timer_interrupts();
 
     loop {}
+}
+
+fn setup_vm() {
+    paging::init();
+
+    let root_page = paging::alloc_16();
+    println!(
+        "a page 0x{:016x} was allocated for a guest page address translation page table",
+        root_page.address().to_usize()
+    );
+    let root_pt = paging::PageTable::from_page(root_page);
+
+    let map_page_num = (unsafe{memlayout::elf_end()} - memlayout::DRAM_START)
+    / (memlayout::PAGE_SIZE as usize)
+    + 1;
+    for i in 0..map_page_num {
+        let vaddr = memlayout::DRAM_START + i * (memlayout::PAGE_SIZE as usize);
+        let page = paging::Page::from_address(paging::PhysicalAddress::new(vaddr));
+        root_pt.map(
+            paging::VirtualAddress::new(vaddr),
+            &page,
+            (paging::PageTableEntryFlag::Read as u16)
+                | (paging::PageTableEntryFlag::Write as u16)
+                | (paging::PageTableEntryFlag::Execute as u16)
+                | (paging::PageTableEntryFlag::User as u16), // required!
+        )
+    }
+
+    let vaddr = memlayout::UART_BASE;
+    let page = paging::Page::from_address(paging::PhysicalAddress::new(vaddr));
+    root_pt.map(
+        paging::VirtualAddress::new(vaddr),
+        &page,
+        (paging::PageTableEntryFlag::Read as u16)
+            | (paging::PageTableEntryFlag::Write as u16)
+            | (paging::PageTableEntryFlag::Execute as u16)
+            | (paging::PageTableEntryFlag::User as u16), // required!
+    );
+    
+
+    let map_page_num = (memlayout::USER_TEST_END - memlayout::USER_TEST_START)
+        / (memlayout::PAGE_SIZE as usize)
+        + 1;
+    for i in 0..map_page_num {
+        let vaddr = memlayout::USER_TEST_START + i * (memlayout::PAGE_SIZE as usize);
+        let page = paging::alloc();
+        root_pt.map(
+            paging::VirtualAddress::new(vaddr),
+            &page,
+            (paging::PageTableEntryFlag::Read as u16)
+                | (paging::PageTableEntryFlag::Write as u16)
+                | (paging::PageTableEntryFlag::Execute as u16)
+                | (paging::PageTableEntryFlag::User as u16), // required!
+        )
+    }
+
+    let mut satp: usize = 0;
+    satp |= (8 as usize) << 60;
+    satp |= (0 as usize) << 44;
+    satp |=  root_pt.page.address().to_ppn();
+
+    println!("satp to be written: 0x{:016x}", satp);
+
+    unsafe{
+        asm!(
+            "csrw satp, {0}", in(reg) satp, options(nostack)
+        );
+
+        asm!("sfence.vma");
+    }
 }
 
 fn enable_timer_interrupts() {
