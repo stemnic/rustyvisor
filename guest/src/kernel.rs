@@ -100,7 +100,7 @@ fn setup_vm() {
             "csrw satp, {0}", in(reg) satp, options(nostack)
         );
 
-        asm!("sfence.vma");
+        //asm!("sfence.vma");
     }
 }
 
