@@ -27,7 +27,7 @@ pub extern "C" fn rust_m_entrypoint(hartid: usize, opqaue: usize) -> ! {
     };
 
     println!("-----------------------");
-    println!(" rvvisor");
+    println!(" rustyvisor");
     println!("-----------------------");
 
     // init logger.

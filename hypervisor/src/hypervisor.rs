@@ -40,9 +40,9 @@ pub fn rust_hypervisor_entrypoint() -> ! {
     log::info!("hypervisor started");
 
     if let Err(e) = riscv::interrupt::free(|_| init()) {
-        panic!("Failed to init rvvisor. {:?}", e)
+        panic!("Failed to init hypervisor. {:?}", e)
     }
-    log::info!("succeeded in initializing rvvisor");
+    log::info!("succeeded in initializing hypervisor");
 
     // TODO (enhnancement): multiplex here
     let guest_name = "guest01";

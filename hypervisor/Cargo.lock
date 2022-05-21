@@ -226,8 +226,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "rvvisor"
-version = "0.1.0"
+name = "rustyvisor"
+version = "0.2.0"
 dependencies = [
  "bare-metal",
  "buddy_system_allocator",
