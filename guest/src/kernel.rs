@@ -55,7 +55,6 @@ fn setup_vm() {
             (paging::PageTableEntryFlag::Read as u16)
                 | (paging::PageTableEntryFlag::Write as u16)
                 | (paging::PageTableEntryFlag::Execute as u16)
-                | (paging::PageTableEntryFlag::User as u16), // required!
         )
     }
 
@@ -67,7 +66,6 @@ fn setup_vm() {
         (paging::PageTableEntryFlag::Read as u16)
             | (paging::PageTableEntryFlag::Write as u16)
             | (paging::PageTableEntryFlag::Execute as u16)
-            | (paging::PageTableEntryFlag::User as u16), // required!
     );
     
 
@@ -83,7 +81,6 @@ fn setup_vm() {
             (paging::PageTableEntryFlag::Read as u16)
                 | (paging::PageTableEntryFlag::Write as u16)
                 | (paging::PageTableEntryFlag::Execute as u16)
-                | (paging::PageTableEntryFlag::User as u16), // required!
         )
     }
 
