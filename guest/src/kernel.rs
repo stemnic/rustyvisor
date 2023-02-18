@@ -36,7 +36,7 @@ pub extern "C" fn rust_entrypoint() -> ! {
 fn setup_vm() {
     paging::init();
 
-    let root_page = paging::alloc_16();
+    let root_page = paging::alloc();
     println!(
         "a page 0x{:016x} was allocated for a guest page address translation page table",
         root_page.address().to_usize()

@@ -148,21 +148,7 @@ pub fn alloc() -> Page {
     }
 }
 
-/// Makes sure the root page follows a 16KiB boundry
-pub fn alloc_16() -> Page {
-    let mut root_page = alloc();
-    while root_page.address().to_usize() & (0b11_1111_1111_1111 as usize) > 0 {
-        log::debug!(
-            "a page 0x{:016x} was allocated, but it does not follow 16KiB boundary. drop.",
-            root_page.address().to_usize()
-        );
-        root_page = alloc();
-    }
-    alloc();
-    alloc();
-    alloc();
-    root_page
-}
+
 
 pub fn alloc_continuous(num: usize) -> Page {
     if num <= 0 {
