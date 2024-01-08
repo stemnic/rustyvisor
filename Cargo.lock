@@ -147,6 +147,7 @@ version = "0.4.0-alpha.1"
 source = "git+https://github.com/rustsbi/rustsbi#3042206f5f37b62a6693789ee573642df0542e11"
 dependencies = [
  "rustsbi-macros",
+ "sbi-rt",
  "sbi-spec",
 ]
 
