@@ -2,9 +2,6 @@
 #![no_main]
 
 #![feature(panic_info_message, type_ascription, asm_const)]
-#![feature(default_alloc_error_handler)]
-#![feature(ptr_metadata)]
-
 
 // Heap implementation
 use buddy_system_allocator::LockedHeap;

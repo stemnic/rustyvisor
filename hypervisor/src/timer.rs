@@ -1,6 +1,4 @@
-use core::fmt::Error;
 use crate::global_const::MAX_NUMBER_OF_GUESTS;
-use crate::sbi::timer::Timer;
 
 #[derive(Debug, Copy, Clone)]
 pub struct VmTimers {
@@ -70,9 +68,26 @@ impl VmTimer {
     }
 }
 
-impl Timer for VmTimers {
+lazy_static::lazy_static! {
+    pub static ref TIMERS: spin::Mutex<VmTimers> = spin::Mutex::new(VmTimers::new());
+}
+
+pub struct TimerHandle {
+    guest_number: u64,
+}
+
+impl TimerHandle {
+    pub fn new(guest_number: u64) -> Self {
+        Self { guest_number }
+    }
+}
+
+impl rustsbi::Timer for TimerHandle {
     #[inline]
-    fn set_timer(&mut self, time_value: u64, guest_id: usize) {
-            self.timers[guest_id].set_timer(time_value);
+    fn set_timer(&self, stime_value: u64) {
+        let mut timer = TIMERS.lock();
+        timer.timers[self.guest_number as usize].set_timer(stime_value);
+        crate::riscv::csr::hvip::clear_timing_interrupt();
+        log::info!("Setting timer mtimecmp {} for guest {}", stime_value, self.guest_number);
     }
 }

@@ -2,8 +2,6 @@
 
 // Based on https://github.com/rustsbi/rustsbi-qemu/blob/main/rustsbi-qemu/src/clint.rs
 
-use crate::sbi::timer::Timer;
-
 use crate::riscv;
 
 pub struct Clint {

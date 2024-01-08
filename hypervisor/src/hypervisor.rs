@@ -7,8 +7,7 @@ use crate::plic;
 use crate::clint;
 use crate::riscv;
 use crate::riscv::gpr::Register;
-use crate::sbi::ecall::SbiRet;
-use crate::sbi::timer;
+use crate::sbi::VmSBI;
 use crate::timer::VmTimers;
 use crate::uart;
 use crate::virtio;
@@ -18,6 +17,8 @@ use core::arch::asm;
 use core::arch::global_asm;
 use core::convert::TryFrom;
 use core::fmt::Error;
+
+use rustsbi::{RustSBI, spec::binary::Error as SbiError};
 
 use alloc::boxed::Box;
 use alloc::string::String;
@@ -241,7 +242,7 @@ pub extern "C" fn rust_strap_handler(
                     0
                 );
 
-                if let Some(mut timer) = timer::TIMER.try_lock() {
+                if let Some(mut timer) = crate::timer::TIMERS.try_lock() {
                     //let mut timer = timer::TIMER.lock();
                     timer.tick_vm_timers(HYPERVISOR_TIMER_TICK);
                     let timer_trigger_list = timer.check_timers();
@@ -284,14 +285,15 @@ pub extern "C" fn rust_strap_handler(
                 let a0 = user_frame.regs[10];
                 let params = [user_frame.regs[10], user_frame.regs[11], user_frame.regs[12], user_frame.regs[13], user_frame.regs[14], user_frame.regs[15]];
                 log::info!("a0: 0x{:x}, a1: 0x{:x}, a6: 0x{:x}, a7: 0x{:x}", a0, a1, a6, a7);
-                let sbi_result = sbi::handle_ecall(a7, a6, params, guest_number);
-                match sbi_result.error {
-                    sbi::ecall::SBI_SUCCESS             =>    log::info!("SBI result SBI_SUCCESS            "),
-                    sbi::ecall::SBI_ERR_NOT_SUPPORTED   =>    log::info!("SBI result SBI_ERR_NOT_SUPPORTED  "),
-                    sbi::ecall::SBI_ERR_INVALID_PARAM   =>    log::info!("SBI result SBI_ERR_INVALID_PARAM  "),
-                    sbi::ecall::SBI_ERR_INVALID_ADDRESS =>    log::info!("SBI result SBI_ERR_INVALID_ADDRESS"),
-                    sbi::ecall::SBI_ERR_FAILED          =>    log::info!("SBI result SBI_ERR_FAILED         "),
-                    _ =>                                      log::info!("SBI result Error {:?}", sbi_result)
+                let sbi = VmSBI::with_guest_number(guest_number);
+                let sbi_result = sbi.handle_ecall(a7, a6, params);
+                match sbi_result.into_result() {
+                    Ok(_) =>                            log::info!("SBI result SBI_SUCCESS            "),
+                    Err(SbiError::NotSupported) =>      log::info!("SBI result SBI_ERR_NOT_SUPPORTED  "),
+                    Err(SbiError::InvalidParam) =>      log::info!("SBI result SBI_ERR_INVALID_PARAM  "),
+                    Err(SbiError::InvalidAddress) =>    log::info!("SBI result SBI_ERR_INVALID_ADDRESS"),
+                    Err(SbiError::Failed) =>            log::info!("SBI result SBI_ERR_FAILED         "),
+                    _ =>                                log::info!("SBI result Error {:?}", sbi_result)
                 }
                 log::info!("SBI result {:?}", sbi_result);
                 // Maybe there is a better way todo this
