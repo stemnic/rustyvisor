@@ -138,6 +138,7 @@ dependencies = [
  "cc",
  "log",
  "num_enum",
+ "sbi-rt",
 ]
 
 [[package]]
@@ -172,6 +173,15 @@ dependencies = [
  "num_enum",
  "rustsbi",
  "spin 0.9.8",
+]
+
+[[package]]
+name = "sbi-rt"
+version = "0.0.3-rc.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16fd1c8d9255a1cc094f2dde32da32dbae1ab945656a684b168bf75ed5dccbb6"
+dependencies = [
+ "sbi-spec",
 ]
 
 [[package]]
