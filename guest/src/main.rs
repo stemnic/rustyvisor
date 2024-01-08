@@ -12,5 +12,4 @@ pub mod boot;
 mod debug;
 pub mod kernel;
 pub mod memlayout;
-pub mod sbi;
 pub mod paging;
