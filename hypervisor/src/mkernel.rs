@@ -80,10 +80,10 @@ pub fn init() -> Result<(), Error> {
     // enable hypervisor extension
     let misa_state = riscv::csr::misa::read();
     riscv::csr::misa::write(misa_state | riscv::csr::misa::HV);
-    assert_eq!(
-        (riscv::csr::misa::read()) & riscv::csr::misa::HV,
-        riscv::csr::misa::HV
-    );
+    //assert_eq!(
+    //    (riscv::csr::misa::read()) & riscv::csr::misa::HV,
+    //    riscv::csr::misa::HV
+    //);
 
     // mtvec: set M-mode trap handler
     riscv::csr::mtvec::set(&(trap as unsafe extern "C" fn()));

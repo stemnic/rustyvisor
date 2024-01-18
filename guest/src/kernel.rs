@@ -3,7 +3,6 @@ global_asm!(include_str!("kernel.S"));
 use crate::memlayout;
 use crate::paging;
 use crate::uart;
-use crate::sbi::ecall::{SbiRet, EXTENSION_TIMER};
 use core::arch::asm;
 use core::arch::global_asm;
 use core::fmt::Error;
